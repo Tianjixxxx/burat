@@ -1,12 +1,16 @@
 const express = require("express");
 const { createCanvas } = require("canvas");
-const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// serve frontend
-app.use(express.static(path.join(__dirname, "public")));
+app.get("/", (req, res) => {
+  res.json({
+    status: true,
+    message: "Brat API running",
+    usage: "/gen/brat?text=HELLO"
+  });
+});
 
 app.get("/gen/brat", (req, res) => {
   const text = String(req.query.text || "BRAT").toUpperCase();
@@ -19,7 +23,7 @@ app.get("/gen/brat", (req, res) => {
   ctx.fillStyle = "#8ACF00";
   ctx.fillRect(0, 0, SIZE, SIZE);
 
-  // auto resize text (NO CUSTOM FONT)
+  // auto resize text (SYSTEM FONT ONLY)
   let fontSize = 220;
   do {
     ctx.font = `bold ${fontSize}px Arial`;
@@ -36,5 +40,5 @@ app.get("/gen/brat", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log("✅ Server running on port", PORT);
+  console.log("✅ Brat API running on port", PORT);
 });
