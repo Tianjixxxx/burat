@@ -1,48 +1,40 @@
 const express = require("express");
-const { createCanvas, registerFont } = require("canvas");
+const { createCanvas } = require("canvas");
+const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-registerFont("./fonts/ArialNarrow.ttf", { family: "ArialNarrow" });
-
-function fitText(ctx, text, maxWidth, maxHeight) {
-  let fontSize = 200;
-  do {
-    ctx.font = `${fontSize}px ArialNarrow`;
-    fontSize--;
-  } while (
-    ctx.measureText(text).width > maxWidth ||
-    fontSize > maxHeight
-  );
-  return fontSize;
-}
+// serve frontend
+app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/gen/brat", (req, res) => {
   const text = (req.query.text || "BRAT").toUpperCase();
 
-  const size = 500;
-  const canvas = createCanvas(size, size);
+  const SIZE = 500;
+  const canvas = createCanvas(SIZE, SIZE);
   const ctx = canvas.getContext("2d");
 
   // background
   ctx.fillStyle = "#8ACF00";
-  ctx.fillRect(0, 0, size, size);
+  ctx.fillRect(0, 0, SIZE, SIZE);
 
-  // text
+  // auto shrink text
+  let fontSize = 220;
+  do {
+    ctx.font = `bold ${fontSize}px Arial`;
+    fontSize -= 5;
+  } while (ctx.measureText(text).width > SIZE - 40 && fontSize > 40);
+
   ctx.fillStyle = "#000";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
+  ctx.fillText(text, SIZE / 2, SIZE / 2);
 
-  const fontSize = fitText(ctx, text, 450, 350);
-  ctx.font = `${fontSize}px ArialNarrow`;
-
-  ctx.fillText(text, size / 2, size / 2);
-
-  res.setHeader("Content-Type", "image/png");
-  canvas.createPNGStream().pipe(res);
+  res.set("Content-Type", "image/png");
+  res.send(canvas.toBuffer("image/png"));
 });
 
-app.listen(PORT, () =>
-  console.log(`Brat API running on http://localhost:${PORT}`)
-);
+app.listen(PORT, () => {
+  console.log("Server running on port", PORT);
+});
