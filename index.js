@@ -5,9 +5,12 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.get("/gen/brat", (req, res) => {
-  const text = req.query.text || "";
+  const text = (req.query.text || "").toString();
 
   const SIZE = 500;
+  const PADDING = 40;
+  const MAX_WIDTH = SIZE - PADDING * 2;
+
   const canvas = createCanvas(SIZE, SIZE);
   const ctx = canvas.getContext("2d");
 
@@ -15,20 +18,23 @@ app.get("/gen/brat", (req, res) => {
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, SIZE, SIZE);
 
-  // Font style (brat-like)
-  const fontSize = 160;
-  ctx.font = `bold ${fontSize}px Arial`;
+  // Start with large font
+  let fontSize = 170;
+  ctx.font = `${fontSize}px Arial`;
+
+  // Auto-shrink font if text is too wide
+  while (ctx.measureText(text).width > MAX_WIDTH && fontSize > 20) {
+    fontSize -= 5;
+    ctx.font = `${fontSize}px Arial`;
+  }
+
+  // Text style
   ctx.fillStyle = "#000000";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
 
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-
-  // Slight blur / softness
-  ctx.shadowColor = "rgba(0,0,0,0.25)";
-  ctx.shadowBlur = 2;
-
-  // Draw text
-  ctx.fillText(text, SIZE / 2, SIZE / 2);
+  // Draw text (top-left like screenshot)
+  ctx.fillText(text, PADDING, PADDING);
 
   // Output image
   res.setHeader("Content-Type", "image/png");
