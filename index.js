@@ -5,42 +5,78 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.get("/gen/brat", (req, res) => {
-  const text = (req.query.text || "").toString();
+  let text = (req.query.text || "").toLowerCase().trim();
+  if (!text) return res.status(400).send("missing text");
 
   const SIZE = 500;
   const PADDING = 40;
-  const MAX_WIDTH = SIZE - PADDING * 2;
+  const GAP_X = 40;   // column gap
+  const GAP_Y = 12;   // line gap
 
   const canvas = createCanvas(SIZE, SIZE);
   const ctx = canvas.getContext("2d");
 
-  // Background
-  ctx.fillStyle = "#ffffff";
+  // background
+  ctx.fillStyle = "#fff";
   ctx.fillRect(0, 0, SIZE, SIZE);
 
-  // Start with large font
-  let fontSize = 170;
-  ctx.font = `${fontSize}px Arial`;
-
-  // Auto-shrink font if text is too wide
-  while (ctx.measureText(text).width > MAX_WIDTH && fontSize > 20) {
-    fontSize -= 5;
-    ctx.font = `${fontSize}px Arial`;
-  }
-
-  // Text style
-  ctx.fillStyle = "#000000";
+  ctx.fillStyle = "#000";
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
 
-  // Draw text (top-left like screenshot)
-  ctx.fillText(text, PADDING, PADDING);
+  const words = text.split(/\s+/);
 
-  // Output image
+  let fontSize = 64;
+  let columns, rows;
+
+  // auto shrink until it fits
+  while (fontSize > 18) {
+    ctx.font = `${fontSize}px Arial`;
+
+    const lineHeight = fontSize + GAP_Y;
+    rows = Math.floor((SIZE - PADDING * 2) / lineHeight);
+    columns = Math.ceil(words.length / rows);
+
+    const colWidth = Math.max(
+      ...words.map(w => ctx.measureText(w).width)
+    );
+
+    const totalWidth =
+      columns * colWidth + (columns - 1) * GAP_X;
+
+    if (totalWidth <= SIZE - PADDING * 2) break;
+
+    fontSize -= 2;
+  }
+
+  ctx.font = `${fontSize}px Arial`;
+
+  const lineHeight = fontSize + GAP_Y;
+  rows = Math.floor((SIZE - PADDING * 2) / lineHeight);
+
+  let x = PADDING;
+  let y = PADDING;
+  let row = 0;
+
+  for (let i = 0; i < words.length; i++) {
+    ctx.fillText(words[i], x, y);
+
+    row++;
+    y += lineHeight;
+
+    if (row >= rows) {
+      row = 0;
+      y = PADDING;
+
+      const wordWidth = ctx.measureText(words[i]).width;
+      x += wordWidth + GAP_X;
+    }
+  }
+
   res.setHeader("Content-Type", "image/png");
   canvas.createPNGStream().pipe(res);
 });
 
 app.listen(PORT, () => {
-  console.log("Brat API running on port", PORT);
+  console.log("brat-style API running on", PORT);
 });
