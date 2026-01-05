@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3000;
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/gen/brat", (req, res) => {
-  const text = (req.query.text || "BRAT").toUpperCase();
+  const text = String(req.query.text || "BRAT").toUpperCase();
 
   const SIZE = 500;
   const canvas = createCanvas(SIZE, SIZE);
@@ -19,11 +19,11 @@ app.get("/gen/brat", (req, res) => {
   ctx.fillStyle = "#8ACF00";
   ctx.fillRect(0, 0, SIZE, SIZE);
 
-  // auto shrink text
+  // auto resize text (NO CUSTOM FONT)
   let fontSize = 220;
   do {
     ctx.font = `bold ${fontSize}px Arial`;
-    fontSize -= 5;
+    fontSize -= 4;
   } while (ctx.measureText(text).width > SIZE - 40 && fontSize > 40);
 
   ctx.fillStyle = "#000";
@@ -31,10 +31,10 @@ app.get("/gen/brat", (req, res) => {
   ctx.textBaseline = "middle";
   ctx.fillText(text, SIZE / 2, SIZE / 2);
 
-  res.set("Content-Type", "image/png");
-  res.send(canvas.toBuffer("image/png"));
+  res.setHeader("Content-Type", "image/png");
+  res.end(canvas.toBuffer("image/png"));
 });
 
 app.listen(PORT, () => {
-  console.log("Server running on port", PORT);
+  console.log("✅ Server running on port", PORT);
 });
